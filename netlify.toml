@@ -3,9 +3,18 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # NEXT_PUBLIC_ vars appear in compiled HTML by design (Next.js inlines them).
-  # Omit these keys from secrets scanning to prevent false positives.
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,NEXT_PUBLIC_WHATSAPP_NUMBER"
+
+# ── Secrets scanning ──────────────────────────────────────────
+# NEXT_PUBLIC_* variables are intentionally embedded in browser
+# JavaScript by Next.js — this is by design, not a leak.
+# We exclude them from scanning to prevent false positives.
+# Ref: https://ntl.fyi/configure-secrets-scanning
+[secrets_scanning]
+  enabled = true
+  omit_keys = [
+    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+    "NEXT_PUBLIC_WHATSAPP_NUMBER"
+  ]
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
