@@ -27,3 +27,4 @@ Thumbs.db
 *.log
 npm-debug.log*
 .cache/
+next-env.d.ts
