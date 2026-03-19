@@ -1,6 +1,6 @@
 # Absolute Brilliance — Jewellery Catalog
 
-A fast, mobile-first jewellery catalog website built with **Next.js 14**, **TypeScript**, and **Cloudinary**. Images are served directly from Cloudinary and the catalog auto-refreshes every 60 minutes — no manual rebuild needed when you upload new photos.
+A fast, mobile-first jewellery catalog website built with **Next.js 16**, **TypeScript**, and **Cloudinary**. Images are served directly from Cloudinary and the catalog auto-refreshes every 60 minutes — no manual rebuild needed when you upload new photos.
 
 ---
 
