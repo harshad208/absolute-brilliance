@@ -215,8 +215,8 @@ export async function fetchCatalog(): Promise<Catalog> {
         const imgRes    = catImages.get(productName) ?? [];
         const vidRes    = catVideos.get(productName) ?? [];
 
-        imgRes.sort((a, b) => a.public_id.localeCompare(b.public_id));
-        vidRes.sort((a, b) => a.public_id.localeCompare(b.public_id));
+        imgRes.sort((a: CResource, b: CResource) => a.public_id.localeCompare(b.public_id));
+        vidRes.sort((a: CResource, b: CResource) => a.public_id.localeCompare(b.public_id));
 
         products.push({
           id:           productId,
@@ -230,7 +230,7 @@ export async function fetchCatalog(): Promise<Catalog> {
         });
       }
 
-      products.sort((a, b) => a.productName.localeCompare(b.productName));
+      products.sort((a: Product, b: Product) => a.productName.localeCompare(b.productName));
       categories.push({
         id:         categoryId,
         name:       categoryName,
@@ -239,7 +239,7 @@ export async function fetchCatalog(): Promise<Catalog> {
       });
     }
 
-    categories.sort((a, b) => a.name.localeCompare(b.name));
+    categories.sort((a: Category, b: Category) => a.name.localeCompare(b.name));
 
     const totalProducts = categories.reduce((n, c) => n + c.products.length, 0);
     const totalImages   = categories.reduce(
