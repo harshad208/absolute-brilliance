@@ -88,7 +88,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 # WhatsApp — international format, no + or spaces
 # India example: 919876543210
-NEXT_PUBLIC_WHATSAPP_NUMBER=91XXXXXXXXXX
+NEXT_PUBLIC_WHATSAPP_NUMBER=XXXXXXXXXX
 ```
 
 Find your Cloudinary credentials at: **cloudinary.com → Settings → API Keys**

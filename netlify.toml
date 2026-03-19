@@ -1,11 +1,12 @@
 [build]
   command = "npm run build"
-  # No publish = "out" — @netlify/plugin-nextjs manages deployment
 
 [build.environment]
   NODE_VERSION = "20"
+  # NEXT_PUBLIC_ vars appear in compiled HTML by design (Next.js inlines them).
+  # Omit these keys from secrets scanning to prevent false positives.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,NEXT_PUBLIC_WHATSAPP_NUMBER"
 
-# Enables ISR, server components, and API routes on Netlify
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
