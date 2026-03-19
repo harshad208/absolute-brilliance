@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cat = await getCategory(category);
   if (!cat) return {};
   return {
-    title: `${cat.name} — Golden Leaf Jewels`,
+    title: `${cat.name} — Absolute Brilliance`,
     description: `Browse our ${cat.name} jewellery — ${cat.products.length} pieces.`,
   };
 }

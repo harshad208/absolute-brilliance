@@ -10,7 +10,7 @@ import { getThumbnailUrl, getBlurUrl } from '@/services/cloudinaryService';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Golden Leaf Jewels — Handcrafted Jewellery Catalog',
+  title: 'Absolute Brilliance — Handcrafted Jewellery Catalog',
   description: 'Browse our collection of handcrafted jewellery.',
 };
 
@@ -27,7 +27,7 @@ export default async function HomePage() {
       <section className="hero">
         <div className="hero-content">
           <p className="hero-eyebrow">Handcrafted with love</p>
-          <h1 className="hero-title">Golden Leaf Jewels</h1>
+          <h1 className="hero-title">Absolute Brilliance</h1>
           <p className="hero-subtitle">
             Explore our curated collections of handcrafted jewellery
           </p>

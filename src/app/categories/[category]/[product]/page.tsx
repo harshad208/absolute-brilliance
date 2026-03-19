@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? getImageUrl(product.images[0].publicId, { width: 1200, height: 630, crop: 'fill' })
     : undefined;
   return {
-    title: `${product.productName} — ${product.categoryName} | Golden Leaf Jewels`,
+    title: `${product.productName} — ${product.categoryName} | Absolute Brilliance`,
     description:
       product.description ??
       `${product.productName} — handcrafted ${product.categoryName.toLowerCase()} jewellery.`,
