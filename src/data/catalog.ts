@@ -20,9 +20,13 @@ import { fetchCatalog } from '@/services/cloudinaryAdminService';
 import type { Catalog, Category, Product } from '@/types';
 
 // ── Refresh interval ─────────────────────────────────────────
-// All three page files import and use this value.
-// 3600 = 60 minutes. Change to 1800 for 30 min, 300 for 5 min.
-export const REVALIDATE_SECONDS = 3600;
+// Each page file exports: export const revalidate = 3600
+// This must be a static number literal in Next.js 16 —
+// it cannot be an imported variable.
+// To change the interval, update the number in each of these files:
+//   src/app/page.tsx
+//   src/app/categories/[category]/page.tsx
+//   src/app/categories/[category]/[product]/page.tsx
 
 // ── Memory cache (within one server render) ──────────────────
 // During a single page render, generateStaticParams() and the

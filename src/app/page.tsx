@@ -2,15 +2,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCategories, getFeaturedProducts, REVALIDATE_SECONDS } from '@/data/catalog';
+import { getCategories, getFeaturedProducts } from '@/data/catalog';
 import { getThumbnailUrl, getBlurUrl } from '@/services/cloudinaryService';
 
-// ISR: Next.js re-fetches Cloudinary every 60 min in the background.
-// New images uploaded to Cloudinary appear automatically within 60 min.
-export const revalidate = REVALIDATE_SECONDS;
+// ISR: re-fetch Cloudinary every 60 min automatically.
+// Must be a static number literal in Next.js 16.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Absolute Brilliance — Handcrafted Jewellery Catalog',
+  title: 'Golden Leaf Jewels — Handcrafted Jewellery Catalog',
   description: 'Browse our collection of handcrafted jewellery.',
 };
 
@@ -27,7 +27,7 @@ export default async function HomePage() {
       <section className="hero">
         <div className="hero-content">
           <p className="hero-eyebrow">Handcrafted with love</p>
-          <h1 className="hero-title">Absolute Brilliance</h1>
+          <h1 className="hero-title">Golden Leaf Jewels</h1>
           <p className="hero-subtitle">
             Explore our curated collections of handcrafted jewellery
           </p>

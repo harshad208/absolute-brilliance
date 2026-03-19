@@ -2,13 +2,13 @@
 // Route: /categories/anklets/anklets--adjustable-anklets
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getAllProductPaths, getCategory, getProduct, REVALIDATE_SECONDS } from '@/data/catalog';
+import { getAllProductPaths, getCategory, getProduct } from '@/data/catalog';
 import { getImageUrl } from '@/services/cloudinaryService';
 import ProductGallery from '@/components/product/ProductGallery';
 import VideoPreview from '@/components/product/VideoPreview';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
-export const revalidate = REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 // Next.js 15: params is a Promise
 interface Props {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? getImageUrl(product.images[0].publicId, { width: 1200, height: 630, crop: 'fill' })
     : undefined;
   return {
-    title: `${product.productName} — ${product.categoryName} | Absolute Brilliance`,
+    title: `${product.productName} — ${product.categoryName} | Golden Leaf Jewels`,
     description:
       product.description ??
       `${product.productName} — handcrafted ${product.categoryName.toLowerCase()} jewellery.`,

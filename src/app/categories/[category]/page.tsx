@@ -3,11 +3,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCategories, getCategory, REVALIDATE_SECONDS } from '@/data/catalog';
+import { getCategories, getCategory } from '@/data/catalog';
 import { getThumbnailUrl, getBlurUrl } from '@/services/cloudinaryService';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
-export const revalidate = REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 // Next.js 15: params is a Promise
 interface Props {
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cat = await getCategory(category);
   if (!cat) return {};
   return {
-    title: `${cat.name} — Absolute Brilliance`,
+    title: `${cat.name} — Golden Leaf Jewels`,
     description: `Browse our ${cat.name} jewellery — ${cat.products.length} pieces.`,
   };
 }
