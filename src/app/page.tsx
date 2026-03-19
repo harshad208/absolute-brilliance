@@ -1,65 +1,157 @@
-import Image from "next/image";
+// src/app/page.tsx  —  Route: /
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import Image from 'next/image';
+import { getCategories, getFeaturedProducts, REVALIDATE_SECONDS } from '@/data/catalog';
+import { getThumbnailUrl, getBlurUrl } from '@/services/cloudinaryService';
 
-export default function Home() {
+// ISR: Next.js re-fetches Cloudinary every 60 min in the background.
+// New images uploaded to Cloudinary appear automatically within 60 min.
+export const revalidate = REVALIDATE_SECONDS;
+
+export const metadata: Metadata = {
+  title: 'Absolute Brilliance — Handcrafted Jewellery Catalog',
+  description: 'Browse our collection of handcrafted jewellery.',
+};
+
+export default async function HomePage() {
+  const [categories, featured] = await Promise.all([
+    getCategories(),
+    getFeaturedProducts(6),
+  ]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main>
+
+      {/* ── Hero ─────────────────────────────────────────── */}
+      <section className="hero">
+        <div className="hero-content">
+          <p className="hero-eyebrow">Handcrafted with love</p>
+          <h1 className="hero-title">Absolute Brilliance</h1>
+          <p className="hero-subtitle">
+            Explore our curated collections of handcrafted jewellery
           </p>
+          <Link href="#categories" className="btn-primary">
+            Browse Catalog
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* ── Categories ───────────────────────────────────── */}
+      <section className="section" id="categories">
+        <div className="container">
+          <h2 className="section-title">Collections</h2>
+
+          {categories.length === 0 ? (
+            <p className="empty-state">
+              No collections found. Check Cloudinary setup.
+            </p>
+          ) : (
+            <div className="category-grid">
+              {categories.map(cat => {
+                const coverPublicId = cat.products[0]?.images[0]?.publicId ?? null;
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/categories/${cat.id}`}
+                    className="category-card"
+                  >
+                    <div className="category-card__image">
+                      {coverPublicId ? (
+                        <Image
+                          src={getThumbnailUrl(coverPublicId, 600)}
+                          alt={cat.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover"
+                          placeholder="blur"
+                          blurDataURL={getBlurUrl(coverPublicId)}
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="category-card__placeholder" />
+                      )}
+                    </div>
+                    <div className="category-card__body">
+                      <h3 className="category-card__name">{cat.name}</h3>
+                      <span className="category-card__count">
+                        {cat.products.length}{' '}
+                        {cat.products.length === 1 ? 'piece' : 'pieces'}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+      </section>
+
+      {/* ── Featured ─────────────────────────────────────── */}
+      {featured.length > 0 && (
+        <section className="section section--alt">
+          <div className="container">
+            <h2 className="section-title">Featured Pieces</h2>
+            <div className="product-grid">
+              {featured.map(product => {
+                const img1 = product.images[0];
+                const img2 = product.images[1];
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/categories/${product.categoryId}/${product.id}`}
+                    className="product-card"
+                  >
+                    <div className="product-card__image">
+                      {img1 ? (
+                        <>
+                          <Image
+                            src={getThumbnailUrl(img1.publicId, 500)}
+                            alt={img1.alt}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover product-card__img"
+                            placeholder="blur"
+                            blurDataURL={getBlurUrl(img1.publicId)}
+                            unoptimized
+                          />
+                          {img2 && (
+                            <Image
+                              src={getThumbnailUrl(img2.publicId, 500)}
+                              alt={img2.alt}
+                              fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                              className="object-cover product-card__img product-card__img--hover"
+                              unoptimized
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="product-card__placeholder" />
+                      )}
+                      {product.videos.length > 0 && (
+                        <span className="product-card__badge">Video</span>
+                      )}
+                    </div>
+                    <div className="product-card__body">
+                      <p className="product-card__category">{product.categoryName}</p>
+                      <h3 className="product-card__name">{product.productName}</h3>
+                      {product.description && (
+                        <p className="product-card__desc">
+                          {product.description.length > 80
+                            ? product.description.slice(0, 80) + '…'
+                            : product.description}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+    </main>
   );
 }

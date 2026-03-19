@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  # No publish = "out" — @netlify/plugin-nextjs manages deployment
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Enables ISR, server components, and API routes on Netlify
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
