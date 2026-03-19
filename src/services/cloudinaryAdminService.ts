@@ -1,19 +1,12 @@
 // ============================================================
 // CLOUDINARY ADMIN SERVICE  — server-only
 // ============================================================
-// Uses the Cloudinary Search API to fetch all assets under
-// Jewellery/ in exactly 2 API calls (images + videos).
+// Fetches all assets under Jewellery/ using the Search API.
+// 2 API calls total (images + videos). Groups by asset_folder.
 //
-// Confirmed working for this account type:
-//   - public_id   = bare filename:  "cover_dpocvu"
-//   - asset_folder = full path:     "Jewellery/Anklets/Adjustable Anklets"
-//   - asset_folder is returned automatically on every resource
-//   - Search expression "folder:Jewellery/*" returns exactly the
-//     right assets (verified: 35 images, matching Cloudinary dashboard)
-//
-// With ISR, this runs automatically every REVALIDATE_SECONDS.
-// Rate limit: 500 Admin API calls/hour (free tier).
-// This approach uses 2 calls per revalidation cycle.
+// Confirmed working:
+//   public_id    = "cover_dpocvu"
+//   asset_folder = "Jewellery/Anklets/Adjustable Anklets"
 
 import type {
   Catalog,
@@ -47,20 +40,24 @@ function adminUrl(path: string): string {
 // ─── Resource type ────────────────────────────────────────────
 
 interface CResource {
-  public_id:    string;  // "cover_dpocvu"
-  asset_folder: string;  // "Jewellery/Anklets/Adjustable Anklets"
+  public_id:    string;
+  asset_folder: string;
   format:       string;
   width?:       number;
   height?:      number;
 }
 
-// ─── Search API ───────────────────────────────────────────────
-// POST /resources/search
-// expression "folder:Jewellery/*" filters to our root folder only.
-// asset_folder field returns automatically — no with_field needed.
-// Paginates via next_cursor for catalogs larger than 500 assets.
+interface SearchResponse {
+  resources:    CResource[];
+  next_cursor?: string;
+  total_count:  number;
+}
 
-async function searchAssets(resourceType: 'image' | 'video'): Promise<CResource[]> {
+// ─── Search API ───────────────────────────────────────────────
+
+async function searchAssets(
+  resourceType: 'image' | 'video'
+): Promise<CResource[]> {
   const all: CResource[] = [];
   let nextCursor: string | undefined;
 
@@ -84,33 +81,32 @@ async function searchAssets(resourceType: 'image' | 'video'): Promise<CResource[
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      console.error(`[Cloudinary] search(${resourceType}) → ${res.status}: ${text}`);
+      console.error(
+        `[Cloudinary] search(${resourceType}) → ${res.status}: ${text}`
+      );
       break;
     }
 
-    const data = await res.json() as {
-      resources:    CResource[];
-      next_cursor?: string;
-      total_count:  number;
-    };
-
+    const data = (await res.json()) as SearchResponse;
     all.push(...(data.resources ?? []));
     nextCursor = data.next_cursor;
-    console.log(`[Cloudinary] ${resourceType}s: ${all.length}/${data.total_count}`);
-
+    console.log(
+      `[Cloudinary] ${resourceType}s: ${all.length}/${data.total_count}`
+    );
   } while (nextCursor);
 
   return all;
 }
 
 // ─── Parse asset_folder ───────────────────────────────────────
-// "Jewellery/Anklets/Adjustable Anklets"
-//  ROOT       CAT     PRODUCT
+// "Jewellery/Anklets/Adjustable Anklets" → { categoryName, productName }
 
-function parseAssetFolder(assetFolder: string): {
+interface FolderParts {
   categoryName: string;
   productName:  string;
-} | null {
+}
+
+function parseAssetFolder(assetFolder: string): FolderParts | null {
   if (!assetFolder) return null;
   const parts = assetFolder.split('/');
   if (parts.length !== 3)       return null;
@@ -118,7 +114,7 @@ function parseAssetFolder(assetFolder: string): {
   return { categoryName: parts[1], productName: parts[2] };
 }
 
-// ─── Slugs ────────────────────────────────────────────────────
+// ─── Slug helpers ─────────────────────────────────────────────
 
 function toSlug(name: string): string {
   return name
@@ -132,12 +128,16 @@ function buildProductId(cat: string, prod: string): string {
   return `${toSlug(cat)}--${toSlug(prod)}`;
 }
 
-// ─── Models ───────────────────────────────────────────────────
+// ─── Resource → model ─────────────────────────────────────────
 
-function toImage(r: CResource, productName: string, i: number): CloudinaryImage {
+function toImage(
+  r: CResource,
+  productName: string,
+  index: number
+): CloudinaryImage {
   return {
     publicId: r.public_id,
-    alt:      `${productName} – photo ${i + 1}`,
+    alt:      `${productName} – photo ${index + 1}`,
     width:    r.width,
     height:   r.height,
     format:   r.format,
@@ -148,7 +148,25 @@ function toVideo(r: CResource): CloudinaryVideo {
   return { publicId: r.public_id, title: '360° view' };
 }
 
-// ─── Main ─────────────────────────────────────────────────────
+// ─── Map helpers ──────────────────────────────────────────────
+
+type ResourceMap = Map<string, Map<string, CResource[]>>;
+
+function addToMap(map: ResourceMap, r: CResource): void {
+  const parsed = parseAssetFolder(r.asset_folder);
+  if (!parsed) return;
+  const { categoryName, productName } = parsed;
+  if (!map.has(categoryName)) {
+    map.set(categoryName, new Map<string, CResource[]>());
+  }
+  const catMap = map.get(categoryName)!;
+  if (!catMap.has(productName)) {
+    catMap.set(productName, []);
+  }
+  catMap.get(productName)!.push(r);
+}
+
+// ─── Main export ──────────────────────────────────────────────
 
 export async function fetchCatalog(): Promise<Catalog> {
   const fetchedAt = new Date().toISOString();
@@ -169,44 +187,59 @@ export async function fetchCatalog(): Promise<Catalog> {
       searchAssets('video'),
     ]);
 
-    console.log(`[Cloudinary] Total: ${images.length} images, ${videos.length} videos`);
+    console.log(
+      `[Cloudinary] Total: ${images.length} images, ${videos.length} videos`
+    );
 
     if (images.length === 0 && videos.length === 0) {
       console.warn(`[Cloudinary] No assets found under "${ROOT_FOLDER}/"`);
       return { categories: [], fetchedAt };
     }
 
-    // Group by category → product using asset_folder
-    const imageMap = new Map<string, Map<string, CResource[]>>();
-    const videoMap = new Map<string, Map<string, CResource[]>>();
+    // ── Group by asset_folder ─────────────────────────────────
+    const imageMap: ResourceMap = new Map();
+    const videoMap: ResourceMap = new Map();
     let skipped = 0;
 
-    function addToMap(map: Map<string, Map<string, CResource[]>>, r: CResource) {
-      const parsed = parseAssetFolder(r.asset_folder);
-      if (!parsed) { skipped++; return; }
-      const { categoryName, productName } = parsed;
-      if (!map.has(categoryName)) map.set(categoryName, new Map());
-      const catMap = map.get(categoryName)!;
-      if (!catMap.has(productName)) catMap.set(productName, []);
-      catMap.get(productName)!.push(r);
+    for (const r of images) {
+      if (parseAssetFolder(r.asset_folder)) {
+        addToMap(imageMap, r);
+      } else {
+        skipped++;
+      }
     }
-
-    for (const r of images) addToMap(imageMap, r);
-    for (const r of videos) addToMap(videoMap, r);
+    for (const r of videos) {
+      if (parseAssetFolder(r.asset_folder)) {
+        addToMap(videoMap, r);
+      } else {
+        skipped++;
+      }
+    }
 
     if (skipped > 0) {
-      console.log(`[Cloudinary] Skipped ${skipped} assets (wrong folder depth)`);
+      console.log(
+        `[Cloudinary] Skipped ${skipped} assets (wrong folder depth)`
+      );
     }
 
-    // Build Category → Product tree
-    const categoryNames = new Set([...imageMap.keys(), ...videoMap.keys()]);
+    // ── Build Category → Product tree ─────────────────────────
+    const categoryNames = new Set<string>([
+      ...imageMap.keys(),
+      ...videoMap.keys(),
+    ]);
+
     const categories: Category[] = [];
 
     for (const categoryName of categoryNames) {
-      const categoryId   = toSlug(categoryName);
-      const catImages    = imageMap.get(categoryName) ?? new Map();
-      const catVideos    = videoMap.get(categoryName) ?? new Map();
-      const productNames = new Set([...catImages.keys(), ...catVideos.keys()]);
+      const categoryId = toSlug(categoryName);
+      const catImages  = imageMap.get(categoryName) ?? new Map<string, CResource[]>();
+      const catVideos  = videoMap.get(categoryName) ?? new Map<string, CResource[]>();
+
+      const productNames = new Set<string>([
+        ...catImages.keys(),
+        ...catVideos.keys(),
+      ]);
+
       const products: Product[] = [];
 
       for (const productName of productNames) {
@@ -215,8 +248,12 @@ export async function fetchCatalog(): Promise<Catalog> {
         const imgRes    = catImages.get(productName) ?? [];
         const vidRes    = catVideos.get(productName) ?? [];
 
-        imgRes.sort((a: CResource, b: CResource) => a.public_id.localeCompare(b.public_id));
-        vidRes.sort((a: CResource, b: CResource) => a.public_id.localeCompare(b.public_id));
+        imgRes.sort((a: CResource, b: CResource) =>
+          a.public_id.localeCompare(b.public_id)
+        );
+        vidRes.sort((a: CResource, b: CResource) =>
+          a.public_id.localeCompare(b.public_id)
+        );
 
         products.push({
           id:           productId,
@@ -224,13 +261,18 @@ export async function fetchCatalog(): Promise<Catalog> {
           categoryId,
           categoryName,
           folderPath:   `${ROOT_FOLDER}/${categoryName}/${productName}`,
-          images:       imgRes.map((r, i) => toImage(r, productName, i)),
-          videos:       vidRes.map(toVideo),
+          images:       imgRes.map((r: CResource, i: number) =>
+                          toImage(r, productName, i)
+                        ),
+          videos:       vidRes.map((r: CResource) => toVideo(r)),
           ...override,
         });
       }
 
-      products.sort((a: Product, b: Product) => a.productName.localeCompare(b.productName));
+      products.sort((a: Product, b: Product) =>
+        a.productName.localeCompare(b.productName)
+      );
+
       categories.push({
         id:         categoryId,
         name:       categoryName,
@@ -239,11 +281,21 @@ export async function fetchCatalog(): Promise<Catalog> {
       });
     }
 
-    categories.sort((a: Category, b: Category) => a.name.localeCompare(b.name));
+    categories.sort((a: Category, b: Category) =>
+      a.name.localeCompare(b.name)
+    );
 
-    const totalProducts = categories.reduce((n, c) => n + c.products.length, 0);
-    const totalImages   = categories.reduce(
-      (n, c) => n + c.products.reduce((m, p) => m + p.images.length, 0), 0
+    const totalProducts = categories.reduce(
+      (n: number, c: Category) => n + c.products.length,
+      0
+    );
+    const totalImages = categories.reduce(
+      (n: number, c: Category) =>
+        n + c.products.reduce(
+          (m: number, p: Product) => m + p.images.length,
+          0
+        ),
+      0
     );
 
     console.log(
