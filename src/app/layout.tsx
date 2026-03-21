@@ -28,6 +28,25 @@ export const metadata: Metadata = {
   description: 'Handcrafted jewellery catalog.',
 };
 
+// Maps category slug → jewellery emoji icon
+// Falls back to 💎 for any unrecognised category
+const CATEGORY_ICONS: Record<string, string> = {
+  anklets:   '🦶',
+  bangles:   '🔮',
+  bracelets: '📿',
+  earings:   '✨',
+  earrings:  '✨',
+  necklaces: '💫',
+  rings:     '💍',
+  pendants:  '🌙',
+  chains:    '⛓️',
+  brooches:  '🌸',
+};
+
+function getCategoryIcon(categoryId: string): string {
+  return CATEGORY_ICONS[categoryId.toLowerCase()] ?? '💎';
+}
+
 export default async function RootLayout({
   children,
 }: {
@@ -41,13 +60,21 @@ export default async function RootLayout({
       <body>
         <header className="navbar">
           <div className="container navbar__inner">
-            <Link href="/" className="navbar__logo">Golden Leaf</Link>
+            <Link href="/" className="navbar__logo">༘˚⋆𐙚｡⋆𖦹.✧˚</Link>
 
             {categories.length > 0 && (
               <nav className="navbar__nav" aria-label="Main navigation">
                 {categories.map(cat => (
-                  <Link key={cat.id} href={`/categories/${cat.id}`}>
-                    {cat.name}
+                  <Link
+                    key={cat.id}
+                    href={`/categories/${cat.id}`}
+                    className="navbar__cat-link"
+                    title={cat.name}
+                  >
+                    <span className="navbar__cat-icon" aria-hidden="true">
+                      {getCategoryIcon(cat.id)}
+                    </span>
+                    <span className="navbar__cat-label"> {cat.name}</span>
                   </Link>
                 ))}
               </nav>
